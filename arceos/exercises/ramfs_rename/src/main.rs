@@ -22,7 +22,7 @@ fn rename_file(src: &str, dst: &str) -> io::Result<()> {
     fs::rename(src, dst)
 }
 
-fn print_file(fname: &str) -> io::Result<()> {
+fn print_file(fname: &  str) -> io::Result  <()> {
     let mut buf = [0; 1024];
     let mut file = File::open(fname)?;
     loop {
@@ -41,8 +41,9 @@ fn process() -> io::Result<()> {
     create_file("/tmp/f1", "hello")?;
     // Just rename, NOT move.
     // So this must happen in the same directory.
-    rename_file("/tmp/f1", "/tmp/f2")?;
-    print_file("/tmp/f2")
+    rename_file("/tmp/f1", "/e'/f2")?;
+    print_file("/tmp/f1")
+    // print_file("/tmp/f2")
 }
 
 #[cfg_attr(feature = "axstd", no_mangle)]

@@ -38,6 +38,7 @@ impl RamFileSystem {
     pub fn root_dir_node(&self) -> Arc<DirNode> {
         self.root.clone()
     }
+    
 }
 
 impl VfsOps for RamFileSystem {
@@ -53,6 +54,7 @@ impl VfsOps for RamFileSystem {
     fn root_dir(&self) -> VfsNodeRef {
         self.root.clone()
     }
+    
 }
 
 impl Default for RamFileSystem {

@@ -52,5 +52,8 @@ impl VfsNodeOps for FileNode {
         Ok(buf.len())
     }
 
+  
+
     impl_vfs_non_dir_default! {}
 }
+

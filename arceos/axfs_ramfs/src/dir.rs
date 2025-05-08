@@ -8,6 +8,7 @@ use spin::RwLock;
 
 use crate::file::FileNode;
 
+
 /// The directory node in the RAM filesystem.
 ///
 /// It implements [`axfs_vfs::VfsNodeOps`].
@@ -163,6 +164,16 @@ impl VfsNodeOps for DirNode {
         } else {
             self.remove_node(name)
         }
+    }
+
+    fn rename(&self, src_path: &str, dst_path: &str) -> VfsResult {
+        log::debug!("rename at ramfs: {} to {}", src_path, dst_path);
+        let (src_name, _src_rest) = split_path(src_path);
+        let (dst_name, _dst_rest) = split_path(dst_path);
+        let parent = self.this.upgrade().unwrap();
+        let src_node = parent.clone().lookup(src_name)?;
+        parent.children.write().insert(dst_name.into(), src_node.clone());
+        Ok(())
     }
 
     axfs_vfs::impl_vfs_dir_default! {}
