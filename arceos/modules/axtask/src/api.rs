@@ -160,6 +160,8 @@ pub fn exit(exit_code: i32) -> ! {
     RUN_QUEUE.lock().exit_current(exit_code)
 }
 
+
+
 /// The idle task routine.
 ///
 /// It runs an infinite loop that keeps calling [`yield_now()`].
