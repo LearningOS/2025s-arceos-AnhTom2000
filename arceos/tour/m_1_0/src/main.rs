@@ -78,12 +78,12 @@ fn handle_page_fault(vaddr: VirtAddr, access_flags: MappingFlags, is_user: bool)
         aspace.
         lock().
         handle_page_fault(vaddr, access_flags){
-            ax_println!("handle page fault ERROR!");
+            ax_println!("{}: segmentation fault, exit!", axtask::current().id_name());
             axtask::exit(-1);
         }else {
-            ax_println!("handle page fault OK!");
+           ax_println!("{}: handle page fault OK!", axtask::current().id_name());
         }
        return true;
     }
-    false
+    return false;
 }
