@@ -10,8 +10,8 @@ use axerrno::LinuxError;
 use axtask::current;
 use axtask::TaskExtRef;
 use axhal::paging::MappingFlags;
-use arceos_posix_api as api;
-use memory_addr::{AddrRange, VirtAddr,PAGE_SIZE_4K};
+use arceos_posix_api::{self as api, get_file_like};
+use memory_addr::{align_up, AddrRange, VirtAddr, PAGE_SIZE_4K};
 
 const SYS_IOCTL: usize = 29;
 const SYS_OPENAT: usize = 56;
@@ -144,46 +144,41 @@ fn sys_mmap(
     fd: i32,
     _offset: isize,
 ) -> isize {
-    if length == 0 {
-        return -1;
-    }
-    let aligned_len = (length + PAGE_SIZE_4K - 1) & !(PAGE_SIZE_4K - 1);
+    let aligned_len = align_up(length, PAGE_SIZE_4K);
     let prot = MmapProt::from_bits_truncate(prot);
     let flags = MmapFlags::from_bits_truncate(flags);
     let map_flags:MappingFlags = prot.into();
-    let curr = current();
 
+    let curr = current();
     let mut aspace = curr.task_ext().aspace.lock();
-    let target_addr = if addr.is_null() {
+    let target_addr = 
         // 从0x1000开始分配空间
         match aspace.find_free_area(
-            VirtAddr::from(0x1000),
+            VirtAddr::from(addr as usize),
             aligned_len,
             AddrRange::new(VirtAddr::from(0x1000), VirtAddr::from(usize::MAX))
         ) {
             Some(addr) => addr,
             None => return -1,
-        }
-    } else {
-        let addr_val = (addr as usize + PAGE_SIZE_4K - 1) & !(PAGE_SIZE_4K - 1); // 页面对齐
-        if flags.contains(MmapFlags::MAP_FIXED) {
-            VirtAddr::from(addr_val)
-        } else {
-            match aspace.find_free_area(
-                VirtAddr::from(addr_val),
-                aligned_len,
-                AddrRange::new(VirtAddr::from(0x1000), VirtAddr::from(usize::MAX))
-            ) {
-                Some(new_addr) => new_addr,
-                None => return -1,
-            }
-        }
     };
     match aspace.map_alloc(
         target_addr, aligned_len, map_flags, true) {
-        Ok(_)=> target_addr.as_usize() as isize,
+        Ok(_)=> {
+            let mut buf = [0u8; PAGE_SIZE_4K];
+            if let file = get_file_like(fd) {
+                if let Ok(n) = file.unwrap().read(&mut buf) {
+                    if n > 0 {
+                    // 写入读取到的内容
+                    aspace.write(target_addr, &buf[..n]);
+                    }
+                }
+            }
+            target_addr.as_usize() as isize
+        },
         Err(_)=> -1
     }
+    
+ 
 }
 
 fn sys_openat(dfd: c_int, fname: *const c_char, flags: c_int, mode: api::ctypes::mode_t) -> isize {
